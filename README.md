@@ -1,24 +1,25 @@
-# Embedded Sensor Controller
+# STM32 Bare-Metal Embedded Controller & Diagnostic Firmware
 
-A C project using simulated temperature readings to control
-a printed fan status.
+A bare-metal embedded firmware project targeting STM32 / ARM Cortex-M,
+focused on low-level peripheral drivers, hardware control and diagnostics.
 
-## Features
-- Processes multiple readings using an array and a loop.
-- Uses a function to decide the fan state.
-- Turns the fan ON at or above 30 degrees Celsius.
+## Planned Features
 
-## Build and run
-```bash
-gcc -std=c11 -Wall -Wextra main.c -o controller
-./controller
-```
+- GPIO driver
+- Timers
+- Interrupts
+- UART diagnostics
+- SPI
+- I2C
+- ADC
+- PWM
+- Error handling
+- Modular driver architecture
 
-## Expected results
-- 25.0 C: OFF
-- 30.0 C: ON
-- 32.5 C: ON
-- 28.0 C: OFF
+## Technologies
 
-## Limitations
-Uses fixed sample readings. No physical hardware is connected.
+- C / Embedded C
+- STM32
+- ARM Cortex-M
+- Bare-metal programming
+- Git / GitHub
