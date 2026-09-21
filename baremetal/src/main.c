@@ -1,5 +1,6 @@
 #include "stm32c0xx.h"
 #include <stdint.h>
+#include <string.h>
 
 /* Software event flag set by the button ISR */
 volatile uint8_t button_event = 0U;
@@ -29,13 +30,70 @@ void EXTI0_1_IRQHandler(void)
     }
 }
 
+void uart_write_char(char c)
+{
+    while (!(USART2->ISR & USART_ISR_TXE_TXFNF))
+    {
+    }
+
+    USART2->TDR = (uint8_t)c;
+}
+
+void uart_write_string(const char *str)
+{
+    while (*str != '\0')
+    {
+        uart_write_char(*str);
+        str++;
+    }
+}
+
+char uart_read_char(void)
+{
+    while (!(USART2->ISR & USART_ISR_RXNE_RXFNE))
+    {
+    }
+
+    return (char)USART2->RDR;
+}
 
 int main(void)
 {
-    uint8_t led_on = 0U;
-uint8_t debounce_active = 0U;
-uint32_t debounce_start = 0U;
+/* PA2 = alternate function */
+GPIOA->MODER &= ~(3U << 4);
+GPIOA->MODER |=  (2U << 4);
 
+/* PA2 = AF1 = USART2_TX */
+GPIOA->AFR[0] &= ~(0xFU << 8);
+GPIOA->AFR[0] |=  (1U << 8);
+
+/* Enable USART2 clock */
+RCC->APBENR1 |= RCC_APBENR1_USART2EN;
+
+/* 115200 baud */
+USART2->BRR = (SystemCoreClock + 57600U) / 115200U;
+
+/* Enable transmitter and USART */
+USART2->CR1 |= USART_CR1_TE | USART_CR1_UE;
+/* PA3 = alternate function */
+GPIOA->MODER &= ~(3U << 6);
+GPIOA->MODER |=  (2U << 6);
+
+/* PA3 = AF1 = USART2_RX */
+GPIOA->AFR[0] &= ~(0xFU << 12);
+GPIOA->AFR[0] |=  (1U << 12);
+
+/* Enable TX + RX + USART */
+USART2->CR1 |= USART_CR1_TE |
+               USART_CR1_RE |
+               USART_CR1_UE;
+
+
+	uint8_t led_on = 0U;
+	uint8_t debounce_active = 0U;
+	uint32_t debounce_start = 0U;
+char rx_buffer[32];
+uint8_t rx_index = 0U;
 
     /* ----------------------------------------
        GPIO CONFIGURATION
@@ -121,9 +179,64 @@ uint32_t debounce_start = 0U;
        MAIN SUPERLOOP
        ---------------------------------------- */
 
-
-    	while (1)
+uart_write_string("Hello from STM32\r\n");
+    	
+    while (1)
 {
+    if (USART2->ISR & USART_ISR_RXNE_RXFNE)
+    {
+        char c = (char)USART2->RDR;
+
+        uart_write_char(c);
+
+        if ((c == '\r') || (c == '\n'))
+        {
+            rx_buffer[rx_index] = '\0';
+
+            if (rx_index > 0U)
+            {
+                if (strcmp(rx_buffer, "help") == 0)
+                {
+                    uart_write_string("\r\nCommands: help, status, led on, led off\r\n");
+                }
+                else if (strcmp(rx_buffer, "status") == 0)
+                {
+                    uart_write_string("\r\nSystem running\r\n");                }
+                else if (strcmp(rx_buffer, "led on") == 0)
+                {
+                    led_on = 1U;
+                    GPIOA->BSRR = (1U << 5);
+                    uart_write_string("\r\nLED ON\r\n");
+                }
+                else if (strcmp(rx_buffer, "led off") == 0)
+                {
+                    led_on = 0U;
+                    GPIOA->BSRR = (1U << 21);
+                    uart_write_string("\r\nLED OFF\r\n");
+                }
+                else
+                {
+                    uart_write_string("\r\nUnknown command\r\n");
+                }
+            }
+
+            rx_index = 0U;
+        }
+        else
+        {
+            if (rx_index < 31U)
+            {
+                rx_buffer[rx_index] = c;
+                rx_index++;
+            }
+        }
+    }
+
+    /* keep your existing button/debounce logic here too */
+
+
+
+
     /* Did EXTI report a possible button press? */
     if (button_event == 1U)
     {
@@ -136,6 +249,8 @@ uint32_t debounce_start = 0U;
             debounce_start = system_ms;
         }
     }
+
+
 
     /* Are we currently waiting for the button signal to settle? */
     if (debounce_active == 1U)
