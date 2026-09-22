@@ -57,8 +57,113 @@ char uart_read_char(void)
     return (char)USART2->RDR;
 }
 
+/*22sep ADC*/
+uint16_t adc_read(void)
+{
+    /* Start one conversion */
+    ADC1->CR |= ADC_CR_ADSTART;
+
+    /* Wait until conversion is complete */
+    while (!(ADC1->ISR & ADC_ISR_EOC))
+    {
+    }
+
+    /* Return 12-bit ADC result */
+    return (uint16_t)ADC1->DR;
+}
+
+
+void adc_init(void)
+{
+    /* Enable ADC peripheral clock */
+    RCC->APBENR2 |= RCC_APBENR2_ADCEN;
+	/* ADC conversion clock = PCLK / 2 */
+	ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE_Msk;
+	ADC1->CFGR2 |=  (1U << ADC_CFGR2_CKMODE_Pos);
+
+    /* Enable ADC internal regulator */
+    ADC1->CR |= ADC_CR_ADVREGEN;
+
+    /* Small startup delay */
+    for (volatile uint32_t i = 0U; i < 1000U; i++)
+    {
+    }
+
+    /* Calibrate ADC */
+    ADC1->CR |= ADC_CR_ADCAL;
+
+    while (ADC1->CR & ADC_CR_ADCAL)
+    {
+    }
+
+    /* Clear old ADC-ready flag */
+    ADC1->ISR = ADC_ISR_ADRDY;
+
+    /* Enable ADC */
+    ADC1->CR |= ADC_CR_ADEN;
+
+    /* Wait until ADC is ready */
+    while (!(ADC1->ISR & ADC_ISR_ADRDY))
+    {
+    }
+
+    /* Clear old channel-config-ready flag */
+    ADC1->ISR = ADC_ISR_CCRDY;
+
+    /* Select PA1 = ADC channel 1 */
+    ADC1->CHSELR = ADC_CHSELR_CHSEL1;
+
+    /* Wait until channel selection is applied */
+    while (!(ADC1->ISR & ADC_ISR_CCRDY))
+    {
+    }
+}
+
+ 
+/*potentiometer*/
+void uart_write_uint16(uint16_t value)
+{
+    char buffer[6];
+    uint8_t index = 0U;
+
+    if (value == 0U)
+    {
+        uart_write_char('0');
+        return;
+    }
+
+    while (value > 0U)
+    {
+        buffer[index] = (char)('0' + (value % 10U));
+        value /= 10U;
+        index++;
+    }
+
+    while (index > 0U)
+    {
+        index--;
+        uart_write_char(buffer[index]);
+    }
+}
+
+
+
 int main(void)
 {
+
+    uint8_t led_on = 0U;
+    uint8_t debounce_active = 0U;
+    uint32_t debounce_start = 0U;
+    char rx_buffer[32];
+    uint8_t rx_index = 0U;
+    uint16_t sensor_value = 0U;
+
+    /* FIRST: Enable GPIOA clock */
+    RCC->IOPENR |= (1U << 0); 
+
+
+
+
 /* PA2 = alternate function */
 GPIOA->MODER &= ~(3U << 4);
 GPIOA->MODER |=  (2U << 4);
@@ -87,21 +192,17 @@ GPIOA->AFR[0] |=  (1U << 12);
 USART2->CR1 |= USART_CR1_TE |
                USART_CR1_RE |
                USART_CR1_UE;
+/* PA1 = analog mode ---ADC */
+GPIOA->MODER &= ~(3U << 2);
+GPIOA->MODER |=  (3U << 2);
 
 
-	uint8_t led_on = 0U;
-	uint8_t debounce_active = 0U;
-	uint32_t debounce_start = 0U;
-char rx_buffer[32];
-uint8_t rx_index = 0U;
 
     /* ----------------------------------------
        GPIO CONFIGURATION
        ---------------------------------------- */
 
-    /* Enable GPIOA peripheral clock */
-    RCC->IOPENR |= (1U << 0);
-
+   
 
     /* PA5 = output for onboard LED */
 
@@ -179,10 +280,16 @@ uint8_t rx_index = 0U;
        MAIN SUPERLOOP
        ---------------------------------------- */
 
-uart_write_string("Hello from STM32\r\n");
-    	
+	
+	 /* ADC setup */
+    adc_init();
+	uart_write_string("Hello from STM32\r\n");
+
     while (1)
 {
+
+sensor_value = adc_read();
+
     if (USART2->ISR & USART_ISR_RXNE_RXFNE)
     {
         char c = (char)USART2->RDR;
@@ -201,7 +308,36 @@ uart_write_string("Hello from STM32\r\n");
                 }
                 else if (strcmp(rx_buffer, "status") == 0)
                 {
-                    uart_write_string("\r\nSystem running\r\n");                }
+		uart_write_string("\r\nSystem running\r\n"); 
+		uart_write_string("Sensor: ");
+    		uart_write_uint16(sensor_value);
+    		uart_write_string("\r\n");  
+			/* Convert ADC value to millivolts */
+    uint32_t voltage_mv =
+        ((uint32_t)sensor_value * 3300U) / 4095U;
+
+    /* Print voltage */
+    uart_write_string("Voltage: ");
+    uart_write_uint16((uint16_t)voltage_mv);
+    uart_write_string(" mV\r\n");
+
+    /* Print sensor state */
+
+		uart_write_string("Sensor State: ");
+
+	if (sensor_value < 1500U)
+	{
+    	uart_write_string("LOW\r\n");
+	}
+	else if (sensor_value < 3000U)
+	{
+    	uart_write_string("NORMAL\r\n");
+	}
+	else
+	{
+    	uart_write_string("HIGH\r\n");
+	}	
+           }
                 else if (strcmp(rx_buffer, "led on") == 0)
                 {
                     led_on = 1U;
