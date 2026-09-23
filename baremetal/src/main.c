@@ -148,6 +148,52 @@ void uart_write_uint16(uint16_t value)
 
 
 
+/*PWM*/
+	void pwm_init(void)
+{
+    /* 1. Enable GPIOA clock */
+    RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
+
+    /* 2. PA6 = Alternate Function mode */
+    GPIOA->MODER &= ~(3U << 12);
+    GPIOA->MODER |=  (2U << 12);
+
+    /* 3. PA6 alternate function = AF1 */
+    GPIOA->AFR[0] &= ~(0xFU << 24);
+    GPIOA->AFR[0] |=  (1U << 24);
+
+    /* 4. Enable TIM3 clock */
+    RCC->APBENR1 |= RCC_APBENR1_TIM3EN;
+
+    /* 5. Timer timing */
+    TIM3->PSC  = 47U;      // 48 MHz / 48 = 1 MHz
+    TIM3->ARR  = 999U;     // 1 MHz / 1000 = 1 kHz PWM
+    TIM3->CCR1 = 250;     // 50% duty cycle
+
+    /* 6. TIM3 Channel 1 = PWM mode 1 */
+    TIM3->CCMR1 &= ~TIM_CCMR1_OC1M_Msk;
+    TIM3->CCMR1 |= (6U << TIM_CCMR1_OC1M_Pos);
+
+    /* 7. Enable CCR1 preload */
+    TIM3->CCMR1 |= TIM_CCMR1_OC1PE;
+
+    /* 8. Enable Channel 1 output */
+    TIM3->CCER |= TIM_CCER_CC1E;
+
+    /* 9. Enable ARR preload */
+    TIM3->CR1 |= TIM_CR1_ARPE;
+
+    /* 10. Load PSC/ARR/CCR values */
+    TIM3->EGR |= TIM_EGR_UG;
+
+    /* 11. Start timer */
+    TIM3->CR1 |= TIM_CR1_CEN;
+}
+
+
+
+
+
 int main(void)
 {
 
@@ -283,13 +329,27 @@ GPIOA->MODER |=  (3U << 2);
 	
 	 /* ADC setup */
     adc_init();
+	pwm_init();
+
 	uart_write_string("Hello from STM32\r\n");
+
+
+
+
+
 
     while (1)
 {
 
 sensor_value = adc_read();
 
+uint32_t pwm_value =
+    ((uint32_t)sensor_value * 1000U) / 4095U;
+
+uint32_t pwm_percent =
+    (pwm_value * 100U) / 1000U;
+
+TIM3->CCR1 = pwm_value;
     if (USART2->ISR & USART_ISR_RXNE_RXFNE)
     {
         char c = (char)USART2->RDR;
@@ -312,9 +372,11 @@ sensor_value = adc_read();
 		uart_write_string("Sensor: ");
     		uart_write_uint16(sensor_value);
     		uart_write_string("\r\n");  
+		uart_write_string("PWM Duty: ");
+	uart_write_uint16((uint16_t)pwm_percent);
+	uart_write_string("%\r\n");
 			/* Convert ADC value to millivolts */
-    uint32_t voltage_mv =
-        ((uint32_t)sensor_value * 3300U) / 4095U;
+    uint32_t voltage_mv = ((uint32_t)sensor_value * 3300U) / 4095U;
 
     /* Print voltage */
     uart_write_string("Voltage: ");
