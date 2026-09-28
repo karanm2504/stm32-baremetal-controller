@@ -1,4 +1,5 @@
 #include "stm32c0xx.h"
+#include "uart.h"
 #include <stdint.h>
 #include <string.h>
 #define MPU6050_ADDR       0x68U
@@ -33,32 +34,7 @@ void EXTI0_1_IRQHandler(void)
     }
 }
 
-void uart_write_char(char c)
-{
-    while (!(USART2->ISR & USART_ISR_TXE_TXFNF))
-    {
-    }
 
-    USART2->TDR = (uint8_t)c;
-}
-
-void uart_write_string(const char *str)
-{
-    while (*str != '\0')
-    {
-        uart_write_char(*str);
-        str++;
-    }
-}
-
-char uart_read_char(void)
-{
-    while (!(USART2->ISR & USART_ISR_RXNE_RXFNE))
-    {
-    }
-
-    return (char)USART2->RDR;
-}
 
 /*22sep ADC*/
 uint16_t adc_read(void)
@@ -123,34 +99,6 @@ void adc_init(void)
 }
 
  
-/*potentiometer*/
-void uart_write_uint16(uint16_t value)
-{
-    char buffer[6];
-    uint8_t index = 0U;
-
-    if (value == 0U)
-    {
-        uart_write_char('0');
-        return;
-    }
-
-    while (value > 0U)
-    {
-        buffer[index] = (char)('0' + (value % 10U));
-        value /= 10U;
-        index++;
-    }
-
-    while (index > 0U)
-    {
-        index--;
-        uart_write_char(buffer[index]);
-    }
-}
-
-
-
 /*PWM*/
 	void pwm_init(void)
 {
@@ -481,43 +429,19 @@ int main(void)
     uint8_t rx_index = 0U;
     uint16_t sensor_value = 0U;
 	uint8_t who_am_i = 0U;
-uint8_t spi_received = 0U;
+    uint8_t spi_received = 0U;
     /* FIRST: Enable GPIOA clock */
     RCC->IOPENR |= (1U << 0); 
 
 
 //spi
+/* Enable GPIOA clock */
 RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 
+/* Initialize USART2 on PA2 and PA3 */
+uart_init();
 
-/* PA2 = alternate function */
-GPIOA->MODER &= ~(3U << 4);
-GPIOA->MODER |=  (2U << 4);
 
-/* PA2 = AF1 = USART2_TX */
-GPIOA->AFR[0] &= ~(0xFU << 8);
-GPIOA->AFR[0] |=  (1U << 8);
-
-/* Enable USART2 clock */
-RCC->APBENR1 |= RCC_APBENR1_USART2EN;
-
-/* 115200 baud */
-USART2->BRR = (SystemCoreClock + 57600U) / 115200U;
-
-/* Enable transmitter and USART */
-USART2->CR1 |= USART_CR1_TE | USART_CR1_UE;
-/* PA3 = alternate function */
-GPIOA->MODER &= ~(3U << 6);
-GPIOA->MODER |=  (2U << 6);
-
-/* PA3 = AF1 = USART2_RX */
-GPIOA->AFR[0] &= ~(0xFU << 12);
-GPIOA->AFR[0] |=  (1U << 12);
-
-/* Enable TX + RX + USART */
-USART2->CR1 |= USART_CR1_TE |
-               USART_CR1_RE |
-               USART_CR1_UE;
 /* PA1 = analog mode ---ADC */
 GPIOA->MODER &= ~(3U << 2);
 GPIOA->MODER |=  (3U << 2);

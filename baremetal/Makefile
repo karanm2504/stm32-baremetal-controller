@@ -9,18 +9,21 @@ CPU = -mcpu=cortex-m0plus -mthumb
 CFLAGS = $(CPU) -Wall -Wextra -O0 -g \
 -I./CMSIS/Include \
 -I./CMSIS/Device/ST/STM32C0xx/Include \
+-I./include \
 -DSTM32C031xx
 
 LDSCRIPT = STM32C031C6Tx_FLASH.ld
 
 SOURCES = \
 src/main.c \
+src/uart.c \
 src/system_stm32c0xx.c \
 src/runtime_stubs.c \
 startup/startup_stm32c031xx.s
 
 OBJECTS = \
 $(BUILD_DIR)/main.o \
+$(BUILD_DIR)/uart.o \
 $(BUILD_DIR)/system_stm32c0xx.o \
 $(BUILD_DIR)/runtime_stubs.o \
 $(BUILD_DIR)/startup_stm32c031xx.o
@@ -34,6 +37,9 @@ $(BUILD_DIR)/runtime_stubs.o: src/runtime_stubs.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/main.o: src/main.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/uart.o: src/uart.c include/uart.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/system_stm32c0xx.o: src/system_stm32c0xx.c | $(BUILD_DIR)
