@@ -2,6 +2,7 @@
 #include "uart.h"
 #include "adc.h"
 #include "pwm.h"
+#include "spi.h"
 #include <stdint.h>
 #include <string.h>
 #define MPU6050_ADDR       0x68U
@@ -227,93 +228,6 @@ if (I2C1->ISR &
 
 
 
-/* SPI*/
-void spi1_gpio_init(void)
-{
-    /* Enable GPIOB clock */
-    RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
-
-    /*
-     * PB3 = SCK
-     * PB4 = MISO
-     * PB5 = MOSI
-     * Set all three to alternate-function mode: 10
-     */
-    GPIOB->MODER &= ~((3U << 6) |
-                      (3U << 8) |
-                      (3U << 10));
-
-    GPIOB->MODER |=  ((2U << 6) |
-                      (2U << 8) |
-                      (2U << 10));
-
-    /* PB3, PB4 and PB5 use AF0 for SPI1 */
-    GPIOB->AFR[0] &= ~((0xFU << 12) |
-                       (0xFU << 16) |
-                       (0xFU << 20));
-
-    /* PB0 = normal GPIO output for CS */
-    GPIOB->MODER &= ~(3U << 0);
-    GPIOB->MODER |=  (1U << 0);
-
-    /* CS starts HIGH: device inactive */
-    GPIOB->BSRR = (1U << 0);
-}
-
-
-
-void spi1_init(void)
-{
-    /* Enable SPI1 peripheral clock */
-    RCC->APBENR2 |= RCC_APBENR2_SPI1EN;
-
-    /* Keep SPI disabled while configuring */
-    SPI1->CR1 &= ~SPI_CR1_SPE;
-
-    /*
-     * Controller/master mode
-     * Software-controlled CS
-     * Internal NSS kept HIGH
-     * Clock = 48 MHz / 8 = 6 MHz
-     */
-    SPI1->CR1 = SPI_CR1_MSTR |
-                SPI_CR1_SSM  |
-                SPI_CR1_SSI  |
-                SPI_CR1_BR_1;
-
-    /*
-     * 8-bit data frame:
-     * DS = 0111 means 8 bits
-     *
-     * RXNE becomes active after receiving 8 bits
-     */
-    SPI1->CR2 = (7U << SPI_CR2_DS_Pos) |
-                SPI_CR2_FRXTH;
-
-    /* Enable SPI1 */
-    SPI1->CR1 |= SPI_CR1_SPE;
-}
-
-uint8_t spi1_transfer(uint8_t transmit_data)
-{
-    /* Wait until the transmit register is empty */
-    while ((SPI1->SR & SPI_SR_TXE) == 0U)
-    {
-    }
-
-    /* Send one 8-bit byte through MOSI */
-    *((volatile uint8_t *)&SPI1->DR) = transmit_data;
-
-    /* Wait until one byte arrives through MISO */
-    while ((SPI1->SR & SPI_SR_RXNE) == 0U)
-    {
-    }
-
-    /* Read and return the received byte */
-    return *((volatile uint8_t *)&SPI1->DR);
-}
-
-
 
 
 int main(void)
@@ -427,28 +341,10 @@ uart_init();
     adc_init();
 	pwm_init();
 	i2c_gpio_init();
-i2c_init();
-spi1_gpio_init();
+i2c_init(); 
 spi1_init();
-
-
-
 uart_write_string("Hello from STM32\r\n");
-
-/* Select the SPI device: CS LOW */
-GPIOB->BSRR = (1U << 16);
-
-/* Send 0xA5 and receive the looped-back byte */
-spi_received = spi1_transfer(0xA5U);
-
-/* Wait until the final clock pulse finishes */
-while (SPI1->SR & SPI_SR_BSY)
-{
-}
-
-/* End the transfer: CS HIGH */
-GPIOB->BSRR = (1U << 0);
-
+spi_received = spi1_loopback_test(0xA5U);
 uart_write_string("SPI sent: 165\r\n");
 uart_write_string("SPI received: ");
 uart_write_uint16(spi_received);
