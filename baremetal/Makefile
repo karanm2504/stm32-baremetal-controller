@@ -18,6 +18,7 @@ SOURCES = \
 src/main.c \
 src/uart.c \
 src/adc.c \
+src/pwm.c \
 src/system_stm32c0xx.c \
 src/runtime_stubs.c \
 startup/startup_stm32c031xx.s
@@ -26,6 +27,7 @@ OBJECTS = \
 $(BUILD_DIR)/main.o \
 $(BUILD_DIR)/uart.o \
 $(BUILD_DIR)/adc.o \
+$(BUILD_DIR)/pwm.o \
 $(BUILD_DIR)/system_stm32c0xx.o \
 $(BUILD_DIR)/runtime_stubs.o \
 $(BUILD_DIR)/startup_stm32c031xx.o
@@ -45,6 +47,9 @@ $(BUILD_DIR)/uart.o: src/uart.c include/uart.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/adc.o: src/adc.c include/adc.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/pwm.o: src/pwm.c include/pwm.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/system_stm32c0xx.o: src/system_stm32c0xx.c | $(BUILD_DIR)
