@@ -3,11 +3,12 @@
 #include "adc.h"
 #include "pwm.h"
 #include "spi.h"
+#include "i2c.h"
 #include <stdint.h>
 #include <string.h>
 #define MPU6050_ADDR       0x68U
 #define MPU6050_WHO_AM_I   0x75U
-volatile uint8_t i2c_stage = 0U;
+
 
 /* Software event flag set by the button ISR */
 volatile uint8_t button_event = 0U;
@@ -36,198 +37,6 @@ void EXTI0_1_IRQHandler(void)
         button_event = 1U;
     }
 }
-
-
-
-//i2c
-void i2c_gpio_init(void)
-{
-    /* Enable GPIO Port B clock */
-    RCC->IOPENR |= RCC_IOPENR_GPIOBEN;
-    (void)RCC->IOPENR;  /* Allow clock enable to take effect */
-
-    /* Open-drain: pins can pull LOW or release the line */
-    GPIOB->OTYPER |= (1U << 8) | (1U << 9);
-
-    /* No internal pulls: external 4.7k resistors are fitted */
-    GPIOB->PUPDR &= ~((3U << 16) | (3U << 18));
-
-    /* PB8 and PB9 use AF6 for I2C1 */
-    GPIOB->AFR[1] &= ~((0xFU << 0) | (0xFU << 4));
-    GPIOB->AFR[1] |=  ((6U << 0) | (6U << 4));
-
-    /* PB8 and PB9 = alternate-function mode */
-    GPIOB->MODER &= ~((3U << 16) | (3U << 18));
-    GPIOB->MODER |=  ((2U << 16) | (2U << 18));
-
-
-}
-
-void i2c_init(void)
-{
-
-
-    /* Enable clock access to I2C1 */
-    RCC->APBENR1 |= RCC_APBENR1_I2C1EN;
-    (void)RCC->APBENR1;
-
-    /* Keep I2C disabled while configuring it */
-    I2C1->CR1 &= ~I2C_CR1_PE;
-
-    /* Select SYSCLK as the I2C1 clock source */
-    RCC->CCIPR &= ~RCC_CCIPR_I2C1SEL;
-    RCC->CCIPR |= RCC_CCIPR_I2C1SEL_0;
-/* 3. Reset I2C1 peripheral */
-    RCC->APBRSTR1 |=  (1U << 21);
-    RCC->APBRSTR1 &= ~(1U << 21);
-
-    /* 4. Enable I2C1 clock */
-    RCC->APBENR1 |= (1U << 21);
-	 I2C1->TIMINGR = 0x20303E5DU;
-    I2C1->CR1 |= I2C_CR1_PE;
-
-
-}
-
-
-uint8_t i2c_read_register(uint8_t device_address,
-                          uint8_t register_address,
-                          uint8_t *value)
-{
-    uint32_t timeout = 100000U;
-
-    /* Clear old I2C flags */
-    I2C1->ICR = I2C_ICR_NACKCF |
-                I2C_ICR_STOPCF |
-                I2C_ICR_BERRCF |
-                I2C_ICR_ARLOCF;
-
-uart_write_string("Register argument = ");
-uart_write_uint16(register_address);
-uart_write_string("\r\n");
-
-
-
-    /*
-     * Stage 1:
-     * Send the device address in WRITE mode.
-     * AUTOEND automatically generates STOP after one byte.
-     */
- 
-/* Stage 1: preload the register address BEFORE START */
-/*
- * Stage 1:
- * Preload register address, then start write without AUTOEND.
- */
-i2c_stage = 1U;
-
-/* Load WHO_AM_I register address */
-I2C1->TXDR = register_address;
-
-/* One-byte write, SOFTEND: do not generate STOP */
-I2C1->CR2 =
-      ((uint32_t)device_address << 1)
-    | (1U << I2C_CR2_NBYTES_Pos)
-    | I2C_CR2_START;
-
-/*
- * Stage 2:
- * Wait until register-address write is complete.
- */
-i2c_stage = 2U;
-timeout = 100000U;
-
-while ((I2C1->ISR &
-       (I2C_ISR_TC |
-        I2C_ISR_NACKF |
-        I2C_ISR_BERR |
-        I2C_ISR_ARLO)) == 0U)
-{
-    if (--timeout == 0U)
-    {
-        uart_write_string("Stage 2 timeout, ISR = ");
-        uart_write_uint16((uint16_t)I2C1->ISR);
-        uart_write_string("\r\n");
-        return 0U;
-    }
-}
-
-if (I2C1->ISR &
-   (I2C_ISR_NACKF |
-    I2C_ISR_BERR |
-    I2C_ISR_ARLO))
-{
-    uart_write_string("Stage 2 error\r\n");
-    return 0U;
-}
-    /*
-     * Stage 3:
-     * Start a new transaction in READ mode.
-     */
-    i2c_stage = 3U;
-    timeout = 100000U;
-
-    I2C1->CR2 =
-          ((uint32_t)device_address << 1)
-        | (1U << I2C_CR2_NBYTES_Pos)
-        | I2C_CR2_RD_WRN
-        | I2C_CR2_AUTOEND
-        | I2C_CR2_START;
-
-    while ((I2C1->ISR &
-           (I2C_ISR_RXNE |
-            I2C_ISR_NACKF |
-            I2C_ISR_BERR |
-            I2C_ISR_ARLO)) == 0U)
-    {
-        if (--timeout == 0U)
-        {
-            uart_write_string("Stage 3 timeout, ISR = ");
-            uart_write_uint16((uint16_t)I2C1->ISR);
-            uart_write_string("\r\n");
-            return 0U;
-        }
-    }
-
-    if (I2C1->ISR &
-       (I2C_ISR_NACKF |
-        I2C_ISR_BERR |
-        I2C_ISR_ARLO))
-    {
-        uart_write_string("Stage 3 error, ISR = ");
-        uart_write_uint16((uint16_t)I2C1->ISR);
-        uart_write_string("\r\n");
-        return 0U;
-    }
-
-    /* Read WHO_AM_I value */
-    *value = (uint8_t)I2C1->RXDR;
-
-    /*
-     * Stage 4:
-     * Wait for the read transaction's automatic STOP.
-     */
-    i2c_stage = 4U;
-    timeout = 100000U;
-
-    while ((I2C1->ISR & I2C_ISR_STOPF) == 0U)
-    {
-        if (--timeout == 0U)
-        {
-            uart_write_string("Stage 4 timeout\r\n");
-            return 0U;
-        }
-    }
-
-    I2C1->ICR = I2C_ICR_STOPCF;
-
-    i2c_stage = 5U;
-    return 1U;
-}
-
-
-
-
 
 
 int main(void)
@@ -339,16 +148,16 @@ uart_init();
 	
 	 /* ADC setup */
     adc_init();
-	pwm_init();
-	i2c_gpio_init();
-i2c_init(); 
-spi1_init();
-uart_write_string("Hello from STM32\r\n");
-spi_received = spi1_loopback_test(0xA5U);
-uart_write_string("SPI sent: 165\r\n");
-uart_write_string("SPI received: ");
-uart_write_uint16(spi_received);
-uart_write_string("\r\n");
+    pwm_init();
+    i2c_init(); 
+    spi1_init();
+    uart_write_string("Hello from STM32\r\n");
+    spi_received = spi1_loopback_test(0xA5U);
+    uart_write_string("SPI sent: 165\r\n");
+    uart_write_string("SPI received: ");
+    uart_write_uint16(spi_received);
+    uart_write_string("\r\n");
+
 
 if (i2c_read_register(MPU6050_ADDR,
                       MPU6050_WHO_AM_I,
@@ -370,17 +179,9 @@ if (i2c_read_register(MPU6050_ADDR,
 else
 {
     uart_write_string("WHO_AM_I failed at stage: ");
-    uart_write_uint16(i2c_stage);
+    uart_write_uint16(i2c_get_stage());
     uart_write_string("\r\n");
 }
-
-
-
-
-
-
-
-
 
 
     while (1)
