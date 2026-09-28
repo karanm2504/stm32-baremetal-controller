@@ -1,5 +1,6 @@
 #include "stm32c0xx.h"
 #include "uart.h"
+#include "adc.h"
 #include <stdint.h>
 #include <string.h>
 #define MPU6050_ADDR       0x68U
@@ -36,67 +37,8 @@ void EXTI0_1_IRQHandler(void)
 
 
 
-/*22sep ADC*/
-uint16_t adc_read(void)
-{
-    /* Start one conversion */
-    ADC1->CR |= ADC_CR_ADSTART;
-
-    /* Wait until conversion is complete */
-    while (!(ADC1->ISR & ADC_ISR_EOC))
-    {
-    }
-
-    /* Return 12-bit ADC result */
-    return (uint16_t)ADC1->DR;
-}
 
 
-void adc_init(void)
-{
-    /* Enable ADC peripheral clock */
-    RCC->APBENR2 |= RCC_APBENR2_ADCEN;
-	/* ADC conversion clock = PCLK / 2 */
-	ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE_Msk;
-	ADC1->CFGR2 |=  (1U << ADC_CFGR2_CKMODE_Pos);
-
-    /* Enable ADC internal regulator */
-    ADC1->CR |= ADC_CR_ADVREGEN;
-
-    /* Small startup delay */
-    for (volatile uint32_t i = 0U; i < 1000U; i++)
-    {
-    }
-
-    /* Calibrate ADC */
-    ADC1->CR |= ADC_CR_ADCAL;
-
-    while (ADC1->CR & ADC_CR_ADCAL)
-    {
-    }
-
-    /* Clear old ADC-ready flag */
-    ADC1->ISR = ADC_ISR_ADRDY;
-
-    /* Enable ADC */
-    ADC1->CR |= ADC_CR_ADEN;
-
-    /* Wait until ADC is ready */
-    while (!(ADC1->ISR & ADC_ISR_ADRDY))
-    {
-    }
-
-    /* Clear old channel-config-ready flag */
-    ADC1->ISR = ADC_ISR_CCRDY;
-
-    /* Select PA1 = ADC channel 1 */
-    ADC1->CHSELR = ADC_CHSELR_CHSEL1;
-
-    /* Wait until channel selection is applied */
-    while (!(ADC1->ISR & ADC_ISR_CCRDY))
-    {
-    }
-}
 
  
 /*PWM*/
@@ -440,11 +382,6 @@ RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 
 /* Initialize USART2 on PA2 and PA3 */
 uart_init();
-
-
-/* PA1 = analog mode ---ADC */
-GPIOA->MODER &= ~(3U << 2);
-GPIOA->MODER |=  (3U << 2);
 
 
 
