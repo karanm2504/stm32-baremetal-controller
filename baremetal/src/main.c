@@ -4,14 +4,12 @@
 #include "pwm.h"
 #include "spi.h"
 #include "i2c.h"
+#include "gpio.h"
 #include <stdint.h>
 #include <string.h>
 #define MPU6050_ADDR       0x68U
 #define MPU6050_WHO_AM_I   0x75U
 
-
-/* Software event flag set by the button ISR */
-volatile uint8_t button_event = 0U;
 
 /* Millisecond counter updated by SysTick */
 volatile uint32_t system_ms = 0U;
@@ -21,21 +19,6 @@ volatile uint32_t system_ms = 0U;
 void SysTick_Handler(void)
 {
     system_ms++;
-}
-
-
-/* Runs automatically when EXTI line 0/1 interrupt occurs */
-void EXTI0_1_IRQHandler(void)
-{
-    /* Check whether EXTI line 0 caused the interrupt */
-    if (EXTI->RPR1 & (1U << 0))
-    {
-        /* Clear rising-edge pending flag */
-        EXTI->RPR1 = (1U << 0);
-
-        /* Tell main() that a button event happened */
-        button_event = 1U;
-    }
 }
 
 
@@ -60,6 +43,7 @@ RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 
 /* Initialize USART2 on PA2 and PA3 */
 uart_init();
+gpio_init();
 
 
 
@@ -151,6 +135,7 @@ uart_init();
     pwm_init();
     i2c_init(); 
     spi1_init();
+
     uart_write_string("Hello from STM32\r\n");
     spi_received = spi1_loopback_test(0xA5U);
     uart_write_string("SPI sent: 165\r\n");
@@ -249,13 +234,13 @@ uint32_t pwm_percent =
                 else if (strcmp(rx_buffer, "led on") == 0)
                 {
                     led_on = 1U;
-                    GPIOA->BSRR = (1U << 5);
+                    led_set(1U);
                     uart_write_string("\r\nLED ON\r\n");
                 }
                 else if (strcmp(rx_buffer, "led off") == 0)
                 {
                     led_on = 0U;
-                    GPIOA->BSRR = (1U << 21);
+                    led_set(0U);
                     uart_write_string("\r\nLED OFF\r\n");
                 }
                 else
@@ -282,9 +267,8 @@ uint32_t pwm_percent =
 
 
     /* Did EXTI report a possible button press? */
-    if (button_event == 1U)
-    {
-        button_event = 0U;
+    if (button_event_take() == 1U)
+{
 
         /* Start debounce only if we are not already debouncing */
         if (debounce_active == 0U)
@@ -305,7 +289,7 @@ uint32_t pwm_percent =
             debounce_active = 0U;
 
             /* Check whether PA0 is STILL HIGH */
-            if (GPIOA->IDR & (1U << 0))
+            if (button_is_pressed() == 1U)
             {
                 led_on ^= 1U;
 

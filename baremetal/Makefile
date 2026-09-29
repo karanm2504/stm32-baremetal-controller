@@ -21,6 +21,7 @@ src/adc.c \
 src/pwm.c \
 src/spi.c \
 src/i2c.c \
+src/gpio.c \
 src/system_stm32c0xx.c \
 src/runtime_stubs.c \
 startup/startup_stm32c031xx.s
@@ -32,6 +33,7 @@ $(BUILD_DIR)/adc.o \
 $(BUILD_DIR)/pwm.o \
 $(BUILD_DIR)/spi.o \
 $(BUILD_DIR)/i2c.o \
+$(BUILD_DIR)/gpio.o \
 $(BUILD_DIR)/system_stm32c0xx.o \
 $(BUILD_DIR)/runtime_stubs.o \
 $(BUILD_DIR)/startup_stm32c031xx.o
@@ -45,6 +47,9 @@ $(BUILD_DIR)/runtime_stubs.o: src/runtime_stubs.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/main.o: src/main.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/gpio.o: src/gpio.c include/gpio.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/uart.o: src/uart.c include/uart.h | $(BUILD_DIR)
