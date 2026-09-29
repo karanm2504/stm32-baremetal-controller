@@ -179,6 +179,22 @@ make
 
 
 
+## Screenshots and Test Evidence
+
+The following screenshots show UART diagnostics, state transitions, and PWM/logic-analyzer verification.
+
+![Test evidence](docs/Output1.1.png)
+
+![Test evidence](docs/Output1.2.png)
+
+![Test evidence](docs/Output1.3.png)
+
+Raw Wokwi logic-analyzer capture:
+
+[Open the VCD capture](docs/wokwi-logic.vcd)
+
+
+
 ## Architecture 
 
 ## Architecture
@@ -196,19 +212,6 @@ I2C ────────────┤
         v       v       v
        UART    PWM      LED
 
-## Screenshots and Test Evidence
-
-The following screenshots show UART diagnostics, state transitions, and PWM/logic-analyzer verification.
-
-![Test evidence](docs/Output1.1.png)
-
-![Test evidence](docs/Output1.2.png)
-
-![Test evidence](docs/Output1.3.png)
-
-Raw Wokwi logic-analyzer capture:
-
-[Open the VCD capture](docs/wokwi-logic.vcd)
 
 
 
