@@ -25,8 +25,8 @@ The project demonstrates peripheral configuration, hardware control, communicati
 | ADC and PWM range validation | Completed |
 | Main application integration | Completed |
 | Complete application behavior test | Completed in Wokwi |
+| Architecture diagram | Completed |
 | Physical I²C verification | Planned |
-| Architecture diagram | Planned |
 | State-machine diagram | Planned |
 | Final physical-hardware test documentation | Planned |
 
@@ -197,18 +197,24 @@ Raw Wokwi logic-analyzer capture:
 
 ## Architecture
 
-```text
-Button / EXTI ─┐
-ADC ────────────┤
-SPI ────────────┤
-I2C ────────────┤
-                v
+```
+                main.c
+                  |
+                  v
+              app_init()
+              app_update()
+                  |
+                  v
         Application State Machine
-              app.c
-                |
-        ┌───────┼───────┐
-        v       v       v
-       UART    PWM      LED
+     INIT / READY / RUNNING / WARNING / ERROR
+                  |
+      ┌───────────┼───────────┐
+      |           |           |
+      v           v           v
+   Drivers      Outputs     Diagnostics
+      |           |           |
+ GPIO/ADC       PWM/LED      UART
+ SPI/I²C
 ```
 
 ## Next Steps
