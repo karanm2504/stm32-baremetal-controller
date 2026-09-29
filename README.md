@@ -194,11 +194,11 @@ I2C ─────────┤
 
 The following screenshots show UART diagnostics, state transitions, and PWM/logic-analyzer verification.
 
-![Test evidence](docs/Output1.png)
+![Test evidence](docs/Output1.1png)
 
-![Test evidence](docs/Output1.1.png)
+![Test evidence](docs/Output1.2.png)
 
-![Test evidence](docs/Output3.png)
+![Test evidence](docs/Output1.3.png)
 
 Raw Wokwi logic-analyzer capture:
 
