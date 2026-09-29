@@ -24,105 +24,10 @@ int main(void)
     uint16_t sensor_value = 0U;
 	uint8_t who_am_i = 0U;
     uint8_t spi_received = 0U;
-    /* FIRST: Enable GPIOA clock */
-    RCC->IOPENR |= (1U << 0); 
-
-
-//spi
-/* Enable GPIOA clock */
-RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
-
-/* Initialize USART2 on PA2 and PA3 */
-uart_init();
-gpio_init();
-timebase_init();
-
-
-
-    /* ----------------------------------------
-       GPIO CONFIGURATION
-       ---------------------------------------- */
-
    
-
-    /* PA5 = output for onboard LED */
-
-    /* Clear PA5 MODER bits 11:10 */
-    GPIOA->MODER &= ~(3U << 10);
-
-    /* Set PA5 MODER bits to 01 = output */
-    GPIOA->MODER |= (1U << 10);
-
-
-    /* Start with LED OFF */
-    GPIOA->BSRR = (1U << 21);
-
-
-    /* PA0 = input for push button */
-
-    /* PA0 MODER bits 1:0 = 00 = input */
-    GPIOA->MODER &= ~(3U << 0);
-
-
-    /* PA0 internal pull-down */
-
-    /* Clear PA0 PUPDR bits */
-    GPIOA->PUPDR &= ~(3U << 0);
-
-    /* 10 = pull-down */
-    GPIOA->PUPDR |= (2U << 0);
-
-
-
-    /* ----------------------------------------
-       EXTI CONFIGURATION
-       ---------------------------------------- */
-
-    /* Connect EXTI line 0 to GPIO Port A */
-    EXTI->EXTICR[0] &= ~(0xFFU << 0);
-
-
-    /* Enable rising-edge trigger for EXTI0 */
-    EXTI->RTSR1 |= (1U << 0);
-
-
-    /* Disable falling-edge trigger */
-    EXTI->FTSR1 &= ~(1U << 0);
-
-
-    /* Clear any old pending rising-edge event */
-    EXTI->RPR1 = (1U << 0);
-
-
-    /* Unmask / enable EXTI line 0 interrupt */
-    EXTI->IMR1 |= (1U << 0);
-
-
-    /* Enable EXTI0/EXTI1 interrupt in NVIC */
-    NVIC_EnableIRQ(EXTI0_1_IRQn);
-
-
-
-    /* ----------------------------------------
-       SYSTICK CONFIGURATION
-       ---------------------------------------- */
-
-    /*
-       Configure SysTick for 1000 interrupts/sec.
-
-       1000 interrupts/sec
-       = one interrupt every 1 ms
-    */
-  
-
-
-
-    /* ----------------------------------------
-       MAIN SUPERLOOP
-       ---------------------------------------- */
-
-	
-	 /* ADC setup */
+    uart_init();
+    gpio_init();
+    timebase_init();
     adc_init();
     pwm_init();
     i2c_init(); 
@@ -253,10 +158,6 @@ uint32_t pwm_percent =
         }
     }
 
-    /* keep your existing button/debounce logic here too */
-
-
-
 
     /* Did EXTI report a possible button press? */
     if (button_event_take() == 1U)
@@ -266,7 +167,7 @@ uint32_t pwm_percent =
         if (debounce_active == 0U)
         {
             debounce_active = 1U;
-            debounce_start = timebase_millis();;
+            debounce_start = timebase_millis();
         }
     }
 
@@ -284,15 +185,7 @@ uint32_t pwm_percent =
             if (button_is_pressed() == 1U)
             {
                 led_on ^= 1U;
-
-                if (led_on == 1U)
-                {
-                    GPIOA->BSRR = (1U << 5);
-                }
-                else
-                {
-                    GPIOA->BSRR = (1U << 21);
-                }
+                led_set(led_on);
             }
         }
     }
