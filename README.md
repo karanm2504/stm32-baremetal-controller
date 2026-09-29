@@ -49,6 +49,33 @@ The project demonstrates peripheral configuration, hardware control, communicati
 - Peripheral troubleshooting and stage markers
 - Non-blocking receive experiments
 
+
+
+## UART Command Interface
+
+The firmware includes a non-blocking UART command interface for runtime diagnostics and control.
+
+Available commands:
+
+```
+status  - Show current system status
+help    - Show available commands
+led on  - Turn LED on
+led off - Turn LED off
+start   - Enter RUNNING state
+stop    - Return to READY state
+
+
+
+--- SYSTEM STATUS ---
+State: RUNNING
+ADC: 3443 / 4095
+PWM: 840 / 1000
+Error: NONE
+---------------------
+
+```
+
 ### ADC
 
 - 12-bit ADC conversion
