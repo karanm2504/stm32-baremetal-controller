@@ -5,21 +5,12 @@
 #include "spi.h"
 #include "i2c.h"
 #include "gpio.h"
+#include "timebase.h"
 #include <stdint.h>
 #include <string.h>
 #define MPU6050_ADDR       0x68U
 #define MPU6050_WHO_AM_I   0x75U
 
-
-/* Millisecond counter updated by SysTick */
-volatile uint32_t system_ms = 0U;
-
-
-/* Runs automatically every 1 ms */
-void SysTick_Handler(void)
-{
-    system_ms++;
-}
 
 
 int main(void)
@@ -44,6 +35,7 @@ RCC->IOPENR |= RCC_IOPENR_GPIOAEN;
 /* Initialize USART2 on PA2 and PA3 */
 uart_init();
 gpio_init();
+timebase_init();
 
 
 
@@ -121,7 +113,7 @@ gpio_init();
        1000 interrupts/sec
        = one interrupt every 1 ms
     */
-    SysTick_Config(SystemCoreClock / 1000U);
+  
 
 
 
@@ -274,7 +266,7 @@ uint32_t pwm_percent =
         if (debounce_active == 0U)
         {
             debounce_active = 1U;
-            debounce_start = system_ms;
+            debounce_start = timebase_millis();;
         }
     }
 
@@ -284,7 +276,7 @@ uint32_t pwm_percent =
     if (debounce_active == 1U)
     {
         /* Has 30 ms passed? */
-        if ((system_ms - debounce_start) >= 30U)
+        if ((timebase_millis() - debounce_start) >= 30U)
         {
             debounce_active = 0U;
 
