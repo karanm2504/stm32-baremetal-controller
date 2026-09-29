@@ -97,6 +97,7 @@ STATE: WARNING
 WARNING: MPU6050 WHO_AM_I mismatch
 STATE: READY
 STATE: RUNNING
+```
 
 ## Pin Configuration
 
