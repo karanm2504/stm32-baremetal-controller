@@ -24,8 +24,8 @@ void pwm_init(void)
     TIM3->PSC = 47U;
     TIM3->ARR = 999U;
 
-    /* Start with 25% duty cycle */
-    TIM3->CCR1 = 250U;
+    /* Start with 0% duty cycle */
+    TIM3->CCR1 = 0U;
 
     /* TIM3 channel 1 = PWM mode 1 */
     TIM3->CCMR1 &= ~TIM_CCMR1_OC1M_Msk;

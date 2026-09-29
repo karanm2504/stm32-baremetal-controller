@@ -15,9 +15,20 @@ The project demonstrates peripheral configuration, hardware control, communicati
 | ADC potentiometer reading | Completed |
 | TIM3 PWM generation | Completed |
 | SPI1 driver and loopback test | Completed |
-| I²C1 register-read driver | Implemented; simulator issue under investigation |
-| Application state machine | Next step |
-| Final error handling | Planned |
+| SPI timeout and status handling | Completed |
+| I²C1 register-read driver | Implemented |
+| I²C timeout and status handling | Completed |
+| MPU6050 `WHO_AM_I` validation | Implemented; Wokwi returns unexpected value |
+| Application state machine | Completed |
+| Safe PWM and LED fault behavior | Completed |
+| Driver error/status handling | Completed for SPI and I²C |
+| ADC and PWM range validation | Completed |
+| Main application integration | Completed |
+| Complete application behavior test | Completed in Wokwi |
+| Physical I²C verification | Planned |
+| Architecture diagram | Planned |
+| State-machine diagram | Planned |
+| Final physical-hardware test documentation | Planned |
 
 ## Implemented Features
 
@@ -73,6 +84,19 @@ The project demonstrates peripheral configuration, hardware control, communicati
 - ACK/NACK and transaction-stage diagnostics
 
 The I²C driver is retained in the project, but the MPU6050 `WHO_AM_I` test has not been completed successfully in Wokwi. Logic-analyzer captures indicate a simulator-specific transaction issue. Verification on physical hardware remains planned.
+
+
+Example startup output:
+
+```text
+STATE: INIT
+SPI status: OK
+I2C status: OK
+MPU6050 WHO_AM_I: 0
+STATE: WARNING
+WARNING: MPU6050 WHO_AM_I mismatch
+STATE: READY
+STATE: RUNNING
 
 ## Pin Configuration
 
@@ -155,23 +179,59 @@ make
 
 ## Next Steps
 
-- Implement the application state machine:
-  - `INIT`
-  - `READY`
-  - `RUNNING`
-  - `WARNING`
-  - `ERROR`
-- Add consistent driver error codes
-- Define safe PWM and LED behavior during faults
-- Integrate all drivers into the main controller
-- Test complete application behaviour
-- Verify I²C communication on physical hardware
-- Add architecture and state-machine diagrams
-- Document final test results
+- Verify MPU6050 I²C communication on physical STM32 hardware
+- Add an architecture diagram
+- Add a state-machine diagram
+- Capture final annotated logic-analyzer screenshots
+- Document physical-hardware test results
+- Perform final source-code formatting and cleanup
+- Add final physical-hardware verification results to the README
 
 ## Current Limitation
 
 The MPU6050 `WHO_AM_I` transaction does not currently return the expected value in the Wokwi simulation. The firmware confirms that `0x75` reaches the I²C driver, but the captured simulated transaction does not transmit the expected register byte.
 
 This limitation is documented instead of hiding the unsuccessful test. The driver will be tested again using physical STM32 hardware.
+
+Learning Outcomes
+This project demonstrates practical experience with:
+- Bare-metal ARM Cortex-M0+ firmware
+- STM32 peripheral registers
+- GPIO
+- EXTI
+- Interrupt handling
+- SysTick
+- Button debounce
+- UART
+- ADC
+- Timers
+- PWM
+- SPI
+- I²C
+- Timeout handling
+- Peripheral diagnostics
+- State machines
+- Fault handling
+- Safe-output design
+- Modular firmware architecture
+- Logic-analyzer debugging
+- Embedded-system testing
+
+
+
+Summary
+This project started as a collection of independent bare-metal STM32 peripheral experiments and evolved into an integrated embedded controller.
+The final application includes:
+- Reusable peripheral drivers
+- A centralized application state machine
+- Safe output behavior
+- Recoverable warnings
+- Fatal error handling
+- Driver status codes
+- UART diagnostics
+- ADC-controlled PWM
+- SPI loopback validation
+- I²C sensor diagnostics
+- Logic-analyzer verification
+The remaining major validation step is physical-hardware testing of the MPU6050 I²C transaction.
 

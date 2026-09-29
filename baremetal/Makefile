@@ -23,6 +23,7 @@ src/spi.c \
 src/i2c.c \
 src/gpio.c \
 src/timebase.c \
+src/app.c \
 src/system_stm32c0xx.c \
 src/runtime_stubs.c \
 startup/startup_stm32c031xx.s
@@ -36,6 +37,7 @@ $(BUILD_DIR)/spi.o \
 $(BUILD_DIR)/i2c.o \
 $(BUILD_DIR)/gpio.o \
 $(BUILD_DIR)/timebase.o \
+$(BUILD_DIR)/app.o \
 $(BUILD_DIR)/system_stm32c0xx.o \
 $(BUILD_DIR)/runtime_stubs.o \
 $(BUILD_DIR)/startup_stm32c031xx.o
@@ -71,6 +73,9 @@ $(BUILD_DIR)/spi.o: src/spi.c include/spi.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/i2c.o: src/i2c.c include/i2c.h include/uart.h | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/app.o: src/app.c include/app.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/system_stm32c0xx.o: src/system_stm32c0xx.c | $(BUILD_DIR)
