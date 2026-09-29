@@ -177,6 +177,38 @@ make
 - Implement timeouts and safe error handling
 - Create a portfolio-ready embedded firmware project
 
+
+
+## Architecture 
+
+Button/EXTI ─┐
+ADC ─────────┤
+SPI ─────────┤
+I2C ─────────┤
+             v
+         app.c state machine
+             |
+       UART / PWM / LED 
+
+## Screenshots and Test Evidence
+
+The following screenshots show UART diagnostics, state transitions, and PWM/logic-analyzer verification.
+
+![Test evidence](docs/Output1.png)
+
+![Test evidence](docs/Output1.1.png)
+
+![Test evidence](docs/Output3.png)
+
+Raw Wokwi logic-analyzer capture:
+
+[Open the VCD capture](docs/wokwi-logic.vcd)
+
+
+
+
+
+
 ## Next Steps
 
 - Verify MPU6050 I²C communication on physical STM32 hardware
