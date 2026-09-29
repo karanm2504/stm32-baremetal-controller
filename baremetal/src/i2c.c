@@ -58,40 +58,49 @@ uint8_t i2c_read_register(uint8_t device_address,
                           uint8_t register_address,
                           uint8_t *value)
 {
-    uint32_t timeout = 100000U;
-
-    /* Clear old error and STOP flags */
+    uint32_t timeout;
+    uint32_t status;
+    
+    /* Clear old flags */
     I2C1->ICR = I2C_ICR_NACKCF |
                 I2C_ICR_STOPCF |
                 I2C_ICR_BERRCF |
                 I2C_ICR_ARLOCF;
 
-    uart_write_string("Register argument = ");
-    uart_write_uint16(register_address);
-    uart_write_string("\r\n");
-
     /*
      * Stage 1:
-     * Send the register address in write mode.
+     * Wait until the bus is free.
      */
     i2c_stage = 1U;
+    timeout = 100000U;
 
-    I2C1->TXDR = register_address;
+    while ((I2C1->ISR & I2C_ISR_BUSY) != 0U)
+    {
+        if (--timeout == 0U)
+        {
+            uart_write_string("Stage 1: bus busy timeout\r\n");
+            return 0U;
+        }
+    }
 
-    I2C1->CR2 =
-          ((uint32_t)device_address << 1)
-        | (1U << I2C_CR2_NBYTES_Pos)
-        | I2C_CR2_START;
+    /* Stage 2: */
+   /* Start the transaction first */
+I2C1->CR2 =
+      ((uint32_t)device_address << 1)
+    | (1U << I2C_CR2_NBYTES_Pos)
+    | I2C_CR2_AUTOEND
+    | I2C_CR2_START;
 
-    /*
-     * Stage 2:
-     * Wait until the register-address write completes.
-     */
-    i2c_stage = 2U;
+/* Immediately load the register byte */
+I2C1->TXDR = register_address;
+
+/* Now generate START */
+I2C1->CR2 |= I2C_CR2_START;
+
     timeout = 100000U;
 
     while ((I2C1->ISR &
-           (I2C_ISR_TC |
+           (I2C_ISR_STOPF |
             I2C_ISR_NACKF |
             I2C_ISR_BERR |
             I2C_ISR_ARLO)) == 0U)
@@ -105,21 +114,42 @@ uint8_t i2c_read_register(uint8_t device_address,
         }
     }
 
-    if (I2C1->ISR &
-       (I2C_ISR_NACKF |
-        I2C_ISR_BERR |
-        I2C_ISR_ARLO))
+    status = I2C1->ISR;
+
+    if ((status & (I2C_ISR_NACKF |
+                   I2C_ISR_BERR |
+                   I2C_ISR_ARLO)) != 0U)
     {
-        uart_write_string("Stage 2 error\r\n");
+        uart_write_string("Stage 2 error, ISR = ");
+        uart_write_uint16((uint16_t)status);
+        uart_write_string("\r\n");
         return 0U;
     }
 
+    /* Clear STOP from the write transaction */
+    I2C1->ICR = I2C_ICR_STOPCF;
+
     /*
      * Stage 3:
-     * Generate a repeated START and read one byte.
+     * Wait until the bus becomes free again.
      */
     i2c_stage = 3U;
     timeout = 100000U;
+
+    while ((I2C1->ISR & I2C_ISR_BUSY) != 0U)
+    {
+        if (--timeout == 0U)
+        {
+            uart_write_string("Stage 3: bus busy timeout\r\n");
+            return 0U;
+        }
+    }
+
+    /*
+     * Stage 4:
+     * Start a separate one-byte read transaction.
+     */
+    i2c_stage = 4U;
 
     I2C1->CR2 =
           ((uint32_t)device_address << 1)
@@ -127,6 +157,8 @@ uint8_t i2c_read_register(uint8_t device_address,
         | I2C_CR2_RD_WRN
         | I2C_CR2_AUTOEND
         | I2C_CR2_START;
+
+    timeout = 100000U;
 
     while ((I2C1->ISR &
            (I2C_ISR_RXNE |
@@ -136,46 +168,46 @@ uint8_t i2c_read_register(uint8_t device_address,
     {
         if (--timeout == 0U)
         {
-            uart_write_string("Stage 3 timeout, ISR = ");
+            uart_write_string("Stage 4 timeout, ISR = ");
             uart_write_uint16((uint16_t)I2C1->ISR);
             uart_write_string("\r\n");
             return 0U;
         }
     }
 
-    if (I2C1->ISR &
-       (I2C_ISR_NACKF |
-        I2C_ISR_BERR |
-        I2C_ISR_ARLO))
+    status = I2C1->ISR;
+
+    if ((status & (I2C_ISR_NACKF |
+                   I2C_ISR_BERR |
+                   I2C_ISR_ARLO)) != 0U)
     {
-        uart_write_string("Stage 3 error, ISR = ");
-        uart_write_uint16((uint16_t)I2C1->ISR);
+        uart_write_string("Stage 4 error, ISR = ");
+        uart_write_uint16((uint16_t)status);
         uart_write_string("\r\n");
         return 0U;
     }
 
-    /* Read the received register value */
     *value = (uint8_t)I2C1->RXDR;
 
     /*
-     * Stage 4:
-     * Wait for the automatic STOP condition.
+     * Stage 5:
+     * Wait for the read transaction’s STOP.
      */
-    i2c_stage = 4U;
+    i2c_stage = 5U;
     timeout = 100000U;
 
     while ((I2C1->ISR & I2C_ISR_STOPF) == 0U)
     {
         if (--timeout == 0U)
         {
-            uart_write_string("Stage 4 timeout\r\n");
+            uart_write_string("Stage 5 timeout\r\n");
             return 0U;
         }
     }
 
     I2C1->ICR = I2C_ICR_STOPCF;
 
-    i2c_stage = 5U;
+    i2c_stage = 6U;
     return 1U;
 }
 
