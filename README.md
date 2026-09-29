@@ -341,5 +341,10 @@ The final application includes:
 - Logic-analyzer verification
 The remaining major validation step is physical-hardware testing of the MPU6050 I²C transaction.
 
+## Current Limitation
+
+The MPU6050 I²C transport is implemented and the I²C transaction completes successfully in simulation. However, the simulated MPU6050 WHO_AM_I register does not return the expected `0x68` value in the current Wokwi setup.
+
+Physical MPU6050 hardware verification was not performed as part of this project.
 
 
