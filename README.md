@@ -181,14 +181,20 @@ make
 
 ## Architecture 
 
-Button/EXTI ─┐
-ADC ─────────┤
-SPI ─────────┤
-I2C ─────────┤
-             v
-         app.c state machine
-             |
-       UART / PWM / LED 
+## Architecture
+
+```text
+Button / EXTI ─┐
+ADC ────────────┤
+SPI ────────────┤
+I2C ────────────┤
+                v
+        Application State Machine
+              app.c
+                |
+        ┌───────┼───────┐
+        v       v       v
+       UART    PWM      LED
 
 ## Screenshots and Test Evidence
 
