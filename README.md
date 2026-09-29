@@ -283,6 +283,29 @@ Raw Wokwi logic-analyzer capture:
 ```
 
 
+
+
+## Python Host CLI
+
+A Python host utility communicates with the STM32 firmware through UART using PySerial.
+
+In the Wokwi + WSL setup, the CLI connects to the Wokwi RFC2217 serial server through the Windows host address.
+
+Examples:
+
+```bash
+cd host
+source .venv/bin/activate
+
+python cli.py status
+python cli.py start
+python cli.py stop
+python cli.py help
+python cli.py "led on"
+python cli.py "led off"
+```
+
+
 ## Next Steps
 
 - Verify MPU6050 I²C communication on physical STM32 hardware

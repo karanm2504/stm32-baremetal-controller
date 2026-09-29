@@ -88,6 +88,23 @@ uint8_t uart_read_char_nonblocking(char *c)
         return 0U;
     }
 
+    /* Clear UART receive error flags if present */
+    if ((USART2->ISR & USART_ISR_ORE) != 0U)
+    {
+        USART2->ICR = USART_ICR_ORECF;
+    }
+
+    if ((USART2->ISR & USART_ISR_FE) != 0U)
+    {
+        USART2->ICR = USART_ICR_FECF;
+    }
+
+    if ((USART2->ISR & USART_ISR_NE) != 0U)
+    {
+        USART2->ICR = USART_ICR_NECF;
+    }
+
+    /* Read received character if available */
     if ((USART2->ISR & USART_ISR_RXNE_RXFNE) != 0U)
     {
         *c = (char)USART2->RDR;

@@ -1,0 +1,5 @@
+[wokwi]
+version = 1
+firmware = "baremetal/build/firmware.bin"
+elf = "baremetal/build/firmware.elf"
+rfc2217ServerPort = 4000
