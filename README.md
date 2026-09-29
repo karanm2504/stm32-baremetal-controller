@@ -217,6 +217,8 @@ The following screenshots show UART diagnostics, state transitions, and PWM/logi
 
 ![Test evidence](docs/Output1.3.png)
 
+![Test evidence- Python CLI ](docs/PythonCLI.png)
+
 Raw Wokwi logic-analyzer capture:
 
 [Open the VCD capture](docs/wokwi-logic.vcd)
@@ -303,6 +305,10 @@ python cli.py stop
 python cli.py help
 python cli.py "led on"
 python cli.py "led off"
+
+
+Python CLI → RFC2217 → Wokwi UART → STM32 firmware
+
 ```
 
 
