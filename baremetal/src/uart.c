@@ -80,3 +80,19 @@ void uart_write_uint16(uint16_t value)
         uart_write_char(buffer[index]);
     }
 }
+
+uint8_t uart_read_char_nonblocking(char *c)
+{
+    if (c == 0)
+    {
+        return 0U;
+    }
+
+    if ((USART2->ISR & USART_ISR_RXNE_RXFNE) != 0U)
+    {
+        *c = (char)USART2->RDR;
+        return 1U;
+    }
+
+    return 0U;
+}
