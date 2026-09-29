@@ -195,8 +195,6 @@ Raw Wokwi logic-analyzer capture:
 
 
 
-## Architecture 
-
 ## Architecture
 
 ```text
@@ -216,63 +214,4 @@ I2C ────────────┤
 
 
 
-
-
-## Next Steps
-
-- Verify MPU6050 I²C communication on physical STM32 hardware
-- Add an architecture diagram
-- Add a state-machine diagram
-- Capture final annotated logic-analyzer screenshots
-- Document physical-hardware test results
-- Perform final source-code formatting and cleanup
-- Add final physical-hardware verification results to the README
-
-## Current Limitation
-
-The MPU6050 `WHO_AM_I` transaction does not currently return the expected value in the Wokwi simulation. The firmware confirms that `0x75` reaches the I²C driver, but the captured simulated transaction does not transmit the expected register byte.
-
-This limitation is documented instead of hiding the unsuccessful test. The driver will be tested again using physical STM32 hardware.
-
-Learning Outcomes
-This project demonstrates practical experience with:
-- Bare-metal ARM Cortex-M0+ firmware
-- STM32 peripheral registers
-- GPIO
-- EXTI
-- Interrupt handling
-- SysTick
-- Button debounce
-- UART
-- ADC
-- Timers
-- PWM
-- SPI
-- I²C
-- Timeout handling
-- Peripheral diagnostics
-- State machines
-- Fault handling
-- Safe-output design
-- Modular firmware architecture
-- Logic-analyzer debugging
-- Embedded-system testing
-
-
-
-Summary
-This project started as a collection of independent bare-metal STM32 peripheral experiments and evolved into an integrated embedded controller.
-The final application includes:
-- Reusable peripheral drivers
-- A centralized application state machine
-- Safe output behavior
-- Recoverable warnings
-- Fatal error handling
-- Driver status codes
-- UART diagnostics
-- ADC-controlled PWM
-- SPI loopback validation
-- I²C sensor diagnostics
-- Logic-analyzer verification
-The remaining major validation step is physical-hardware testing of the MPU6050 I²C transaction.
 
