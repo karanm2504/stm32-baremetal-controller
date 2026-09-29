@@ -217,6 +217,44 @@ Raw Wokwi logic-analyzer capture:
  SPI/I²C
 ```
 
+
+## State-Machine Diagram
+
+```
+                     ┌─────────┐
+                     │  INIT   │
+                     └────┬────┘
+                          |
+             startup diagnostics complete
+                          |
+          ┌───────────────┴───────────────┐
+          |                               |
+          | recoverable fault             | fatal fault
+          v                               v
+     ┌─────────┐                     ┌─────────┐
+     │ WARNING │                     │  ERROR  │
+     └────┬────┘                     └─────────┘
+          |
+          | user acknowledgement
+          v
+     ┌─────────┐
+     │  READY  │
+     └────┬────┘
+          |
+          | button press
+          v
+     ┌─────────┐
+     │ RUNNING │
+     └────┬────┘
+          |
+          | button press
+          v
+     ┌─────────┐
+     │  READY  │
+     └─────────┘
+```
+
+
 ## Next Steps
 
 - Verify MPU6050 I²C communication on physical STM32 hardware
