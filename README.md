@@ -26,8 +26,8 @@ The project demonstrates peripheral configuration, hardware control, communicati
 | Main application integration | Completed |
 | Complete application behavior test | Completed in Wokwi |
 | Architecture diagram | Completed |
+| State-machine diagram | Completed |
 | Physical I²C verification | Planned |
-| State-machine diagram | Planned |
 | Final physical-hardware test documentation | Planned |
 
 ## Implemented Features
